@@ -6,11 +6,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  images: {
-    unoptimized: true,
+  experimental: {
+    serverComponentsExternalPackages: ['chromadb']
   },
   webpack: (config, { isServer }) => {
-    // Handle chromadb external dependencies
+    // Handle chromadb external dependencies for client-side
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -28,12 +28,6 @@ const nextConfig = {
         path: false,
       };
     }
-
-    // Ignore chromadb external URL imports
-    config.externals = config.externals || [];
-    config.externals.push({
-      'https://unpkg.com/chromadb-default-embed@2.14.0': 'chromadb-default-embed',
-    });
 
     return config;
   },
