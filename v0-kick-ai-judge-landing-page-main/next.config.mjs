@@ -1,12 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ['chromadb'],
+  // Use webpack for compatibility with chromadb
   webpack: (config, { isServer }) => {
     // Handle chromadb external dependencies for client-side
     if (!isServer) {

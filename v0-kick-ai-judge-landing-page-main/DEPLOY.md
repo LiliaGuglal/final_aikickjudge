@@ -7,9 +7,11 @@
 3. **Виправлено PostCSS конфігурацію** - оновлено для сумісності з Tailwind v3
 4. **Оновлено CSS змінні** - замінено OKLCH на HSL для кращої сумісності
 5. **Видалено дублікат стилів** - видалено конфліктуючий файл `styles/globals.css`
-6. **Додано ESLint конфігурацію** - базова конфігурація для Next.js
+6. **Оновлено ESLint до v9** - сучасна конфігурація для Next.js
 7. **Виправлено Vercel runtime помилку** - видалено некоректну конфігурацію
 8. **Додано Node.js версію** - встановлено правильну версію для Vercel
+9. **Оновлено Next.js до v16.0.8** - виправлено вразливість CVE-2025-66478
+10. **Налаштовано webpack замість Turbopack** - для сумісності з chromadb
 
 ## Кроки для деплою
 
@@ -43,13 +45,15 @@
 
 ## Змінені файли
 
-- `package.json` - оновлені залежності та додано engines
+- `package.json` - оновлено Next.js до v16.0.8, ESLint до v9, додано engines
 - `tailwind.config.js` - створено конфігурацію для v3
 - `postcss.config.mjs` - оновлено для Tailwind v3
 - `app/globals.css` - виправлено CSS змінні та директиви
-- `.eslintrc.json` - додано ESLint конфігурацію
+- `eslint.config.mjs` - нова конфігурація ESLint v9 для Next.js
 - `.nvmrc` - встановлено Node.js версію 18
 - `.npmrc` - додано налаштування npm
-- `next.config.mjs` - оптимізовано для Vercel
+- `next.config.mjs` - налаштовано webpack для сумісності з chromadb
+- `.env.example` - шаблон environment variables
 - Видалено `vercel.json` - Next.js автоматично розпізнається Vercel
 - Видалено `styles/globals.css` - дублікат файлу стилів
+- Видалено `.eslintrc.json` - замінено на нову конфігурацію
