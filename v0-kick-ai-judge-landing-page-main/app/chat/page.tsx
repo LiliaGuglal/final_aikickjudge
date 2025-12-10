@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Globe, Sparkles, Menu, X, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { ChatInterface } from "@/components/chat/chat-interface"
+import { SuggestedQuestions } from "@/components/chat/SuggestedQuestions"
 
 export default function ChatPage() {
   const [language, setLanguage] = useState<"uk" | "en">("uk")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null)
 
   const content = {
     uk: {
@@ -42,6 +44,10 @@ export default function ChatPage() {
   }
 
   const t = content[language]
+
+  const handleQuestionSelect = (question: string) => {
+    setSelectedQuestion(question)
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -179,9 +185,22 @@ export default function ChatPage() {
             <p className="text-lg text-zinc-400 max-w-2xl mx-auto">{t.subtitle}</p>
           </div>
 
+          {/* Suggested Questions */}
+          <div className="mb-4">
+            <SuggestedQuestions
+              onQuestionSelect={handleQuestionSelect}
+              language={language}
+              className="shadow-lg"
+            />
+          </div>
+
           {/* Chat Interface */}
           <div className="w-full h-[600px] md:h-[700px]">
-            <ChatInterface className="h-full border-zinc-800 bg-zinc-950 shadow-2xl" />
+            <ChatInterface 
+              className="h-full border-zinc-800 bg-zinc-950 shadow-2xl"
+              initialMessage={selectedQuestion}
+              onMessageSent={() => setSelectedQuestion(null)}
+            />
           </div>
 
           {/* Info Cards */}

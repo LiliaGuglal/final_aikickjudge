@@ -23,11 +23,18 @@ import {
   Download,
 } from "lucide-react"
 import Link from "next/link"
+import { VideoUploadZone } from "@/components/video-upload/VideoUploadZone"
+import { VideoPlayer } from "@/components/video-upload/VideoPlayer"
+import { CategorySelector, KickboxingCategory } from "@/components/video-upload/CategorySelector"
+import { UploadError } from "@/lib/types/video-upload"
 
 export default function DemoPage() {
   const [language, setLanguage] = useState<"uk" | "en">("uk")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [videoUploaded, setVideoUploaded] = useState(false)
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<KickboxingCategory | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [analysisComplete, setAnalysisComplete] = useState(false)
@@ -44,8 +51,18 @@ export default function DemoPage() {
     }
   }, [analyzing, progress])
 
-  const handleUpload = () => {
+  const handleVideoUploaded = (file: File, url: string) => {
+    setUploadedFile(file)
+    setVideoUrl(url)
     setVideoUploaded(true)
+  }
+
+  const handleUploadError = (error: UploadError) => {
+    console.error('Upload error:', error)
+  }
+
+  const handleCategorySelected = (category: KickboxingCategory) => {
+    setSelectedCategory(category)
   }
 
   const handleAnalyze = () => {
@@ -295,84 +312,95 @@ export default function DemoPage() {
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left: Video Upload/Player */}
             <div className="space-y-6">
-              <Card className="bg-zinc-950 border-zinc-900 p-8">
-                <h2 className="text-2xl font-bold mb-6">{t.upload.title}</h2>
+              {!videoUploaded ? (
+                <VideoUploadZone
+                  onVideoUploaded={handleVideoUploaded}
+                  onError={handleUploadError}
+                  maxFileSize={2 * 1024 * 1024 * 1024} // 2GB
+                  acceptedFormats={['video/mp4']}
+                />
+              ) : !selectedCategory ? (
+                <>
+                  {videoUrl && (
+                    <VideoPlayer
+                      videoUrl={videoUrl}
+                      onTimeUpdate={(currentTime, duration) => {
+                        // Handle time updates if needed
+                      }}
+                      onPlay={() => {
+                        // Handle play event if needed
+                      }}
+                      onPause={() => {
+                        // Handle pause event if needed
+                      }}
+                    />
+                  )}
+                  
+                  <CategorySelector
+                    onCategorySelected={handleCategorySelected}
+                    language={language}
+                  />
+                </>
+              ) : (
+                <>
+                  {videoUrl && (
+                    <VideoPlayer
+                      videoUrl={videoUrl}
+                      onTimeUpdate={(currentTime, duration) => {
+                        // Handle time updates if needed
+                      }}
+                      onPlay={() => {
+                        // Handle play event if needed
+                      }}
+                      onPause={() => {
+                        // Handle pause event if needed
+                      }}
+                    />
+                  )}
 
-                {!videoUploaded ? (
-                  <div>
-                    <div className="border-2 border-dashed border-zinc-800 rounded-lg p-12 text-center hover:border-zinc-700 transition-colors cursor-pointer">
-                      <Upload className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-                      <p className="text-lg text-zinc-400 mb-2">{t.upload.dragDrop}</p>
-                      <div className="space-y-1 text-sm text-zinc-500">
-                        <p className="flex items-center justify-center gap-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          {t.upload.formats}
-                        </p>
-                        <p className="flex items-center justify-center gap-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          {t.upload.maxSize}
-                        </p>
-                        <p className="flex items-center justify-center gap-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          {t.upload.quality}
-                        </p>
+                  {/* Selected Category Display */}
+                  <Card className="bg-zinc-950 border-zinc-900 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <selectedCategory.icon className="w-6 h-6 text-blue-400" />
+                        <div>
+                          <h3 className="font-semibold text-white">
+                            {language === 'uk' ? selectedCategory.name : selectedCategory.nameEn}
+                          </h3>
+                          <p className="text-sm text-zinc-400">
+                            {language === 'uk' ? selectedCategory.description : selectedCategory.descriptionEn}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-
-                    <Button
-                      onClick={handleUpload}
-                      size="lg"
-                      className="w-full mt-6 bg-white text-black hover:bg-zinc-200"
-                    >
-                      <FileVideo className="w-5 h-5 mr-2" />
-                      {t.upload.button}
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="aspect-video bg-zinc-900 rounded-lg mb-6 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-[url('/kickboxing-match-action.jpg')] bg-cover bg-center opacity-40" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Button
-                          size="icon"
-                          className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20"
-                        >
-                          <Play className="w-8 h-8" />
-                        </Button>
-                      </div>
-
-                      <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-zinc-800">
-                        <span className="text-sm font-semibold flex items-center gap-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          {t.upload.uploaded}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-4 mb-6">
-                      <Button size="icon" variant="ghost" className="text-zinc-400 hover:text-white">
-                        <SkipBack className="w-5 h-5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="text-zinc-400 hover:text-white">
-                        <Pause className="w-5 h-5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="text-zinc-400 hover:text-white">
-                        <SkipForward className="w-5 h-5" />
-                      </Button>
-                    </div>
-
-                    {!analyzing && !analysisComplete && (
                       <Button
-                        onClick={handleAnalyze}
+                        onClick={() => setSelectedCategory(null)}
+                        variant="outline"
+                        size="sm"
+                        className="border-zinc-700 hover:bg-zinc-800"
+                      >
+                        {language === 'uk' ? 'Змінити' : 'Change'}
+                      </Button>
+                    </div>
+                  </Card>
+                  
+                  {!analyzing && !analysisComplete && (
+                    <Card className="bg-zinc-950 border-zinc-900 p-6">
+                      <Button
+                        onClick={() => {
+                          setAnalyzing(true)
+                          setProgress(0)
+                        }}
                         size="lg"
                         className="w-full bg-white text-black hover:bg-zinc-200"
                       >
                         <Sparkles className="w-5 h-5 mr-2" />
                         {t.upload.analyze}
                       </Button>
-                    )}
+                    </Card>
+                  )}
 
-                    {analyzing && (
+                  {analyzing && (
+                    <Card className="bg-zinc-950 border-zinc-900 p-6">
                       <div className="space-y-4">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-zinc-400">{t.analyzing.title}</span>
@@ -390,7 +418,7 @@ export default function DemoPage() {
                               key={i}
                               className={`flex items-center gap-2 text-sm ${
                                 progress > i * 20 ? "text-white" : "text-zinc-600"
-                              }`}
+              }`}
                             >
                               {progress > (i + 1) * 20 ? (
                                 <Check className="w-4 h-4 text-green-500" />
@@ -402,10 +430,10 @@ export default function DemoPage() {
                           ))}
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-              </Card>
+                    </Card>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Right: Statistics Panel */}
@@ -525,8 +553,13 @@ export default function DemoPage() {
                           className="border-zinc-700 hover:bg-zinc-900 bg-transparent"
                           onClick={() => {
                             setVideoUploaded(false)
+                            setSelectedCategory(null)
                             setAnalysisComplete(false)
                             setProgress(0)
+                            if (videoUrl) {
+                              URL.revokeObjectURL(videoUrl)
+                              setVideoUrl(null)
+                            }
                           }}
                         >
                           {t.results.newAnalysis}

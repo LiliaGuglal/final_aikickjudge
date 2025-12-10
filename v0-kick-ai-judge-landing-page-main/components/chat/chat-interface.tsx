@@ -1,17 +1,26 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Message, ChatState } from './types';
 import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
 import { ErrorBanner } from './error-banner';
 import { cn } from '@/lib/utils';
 
-interface ChatInterfaceProps {
-  className?: string;
+// Generate session ID on client side
+function generateClientSessionId(): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  return `session_${timestamp}_${random}`;
 }
 
-export function ChatInterface({ className }: ChatInterfaceProps) {
+interface ChatInterfaceProps {
+  className?: string;
+  initialMessage?: string | null;
+  onMessageSent?: () => void;
+}
+
+export function ChatInterface({ className, initialMessage, onMessageSent }: ChatInterfaceProps) {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     isLoading: false,
@@ -20,6 +29,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   
   // Store the last message for retry functionality
   const lastMessageRef = useRef<string | null>(null);
+  
+  // Session ID management
+  const [sessionId, setSessionId] = useState<string>('');
+  
+  // Generate session ID on component mount
+  useEffect(() => {
+    const newSessionId = generateClientSessionId();
+    setSessionId(newSessionId);
+    console.log('ChatInterface: Generated session ID:', newSessionId);
+  }, []);
+
+  // Handle initial message - will be defined after handleSendMessage function
 
   const handleSendMessage = async (content: string) => {
     // Store message for retry functionality
@@ -42,13 +63,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }));
 
     try {
-      // Call API route
+      // Call API route with session ID
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({ 
+          message: content,
+          sessionId: sessionId 
+        }),
       });
 
       if (!response.ok) {
@@ -56,6 +80,43 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         throw new Error(
           errorData.error || `API error: ${response.status} ${response.statusText}`
         );
+      }
+
+      // Check if this is an analytics response (JSON)
+      const contentType = response.headers.get('Content-Type');
+      if (contentType?.includes('application/json')) {
+        const analyticsData = await response.json();
+        
+        if (analyticsData.isAnalytics && analyticsData.content) {
+          // Handle analytics response
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: analyticsData.content,
+            timestamp: new Date(),
+          };
+
+          setChatState((prev) => ({
+            ...prev,
+            messages: [...prev.messages, assistantMessage],
+            isLoading: false,
+          }));
+          
+          console.log('Analytics response processed:', {
+            confidence: analyticsData.confidence,
+            executionTime: analyticsData.executionTime,
+            functionsUsed: analyticsData.functionsUsed
+          });
+          
+          return;
+        }
+      }
+
+      // Update session ID from response headers if provided
+      const responseSessionId = response.headers.get('X-Session-Id');
+      if (responseSessionId && responseSessionId !== sessionId) {
+        setSessionId(responseSessionId);
+        console.log('ChatInterface: Updated session ID from server:', responseSessionId);
       }
 
       // Handle streaming response
@@ -125,6 +186,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
+  // Handle initial message
+  useEffect(() => {
+    if (initialMessage && sessionId) {
+      handleSendMessage(initialMessage);
+      onMessageSent?.();
+    }
+  }, [initialMessage, sessionId]);
+
   const handleRetry = () => {
     if (lastMessageRef.current) {
       handleSendMessage(lastMessageRef.current);
@@ -138,6 +207,51 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }));
   };
 
+  const handleClearChat = async () => {
+    if (!sessionId) {
+      console.warn('ChatInterface: No session ID available for clearing');
+      return;
+    }
+
+    try {
+      setChatState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      const response = await fetch('/api/chat/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Clear local chat state
+        setChatState({
+          messages: [],
+          isLoading: false,
+          error: null,
+        });
+        
+        // Generate new session ID for fresh start
+        const newSessionId = generateClientSessionId();
+        setSessionId(newSessionId);
+        
+        console.log('ChatInterface: Chat cleared successfully, new session:', newSessionId);
+      } else {
+        throw new Error(result.message || 'Failed to clear chat');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to clear chat';
+      setChatState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -145,6 +259,20 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         className
       )}
     >
+      {/* Header with Clear button */}
+      <div className="flex items-center justify-between p-3 border-b border-zinc-800">
+        <div className="text-sm text-zinc-400">
+          KickAI Суддя • Сесія: {sessionId.slice(-8)}
+        </div>
+        <button
+          onClick={handleClearChat}
+          disabled={chatState.isLoading}
+          className="px-3 py-1 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Очистити
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto bg-black">
         <MessageList
           messages={chatState.messages}

@@ -1,0 +1,27 @@
+# Docker Compose for Vector Search Development
+# Run with: docker-compose -f docker-compose.vector.yml up -d
+
+version: '3.8'
+
+services:
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: kickai-chroma
+    ports:
+      - "8000:8000"
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+      - PERSIST_DIRECTORY=/chroma/chroma
+    volumes:
+      - chroma_data:/chroma/chroma
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  chroma_data:
+    driver: local
