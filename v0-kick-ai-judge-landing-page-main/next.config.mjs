@@ -6,9 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['chromadb']
-  },
+  serverExternalPackages: ['chromadb'],
   webpack: (config, { isServer }) => {
     // Handle chromadb external dependencies for client-side
     if (!isServer) {

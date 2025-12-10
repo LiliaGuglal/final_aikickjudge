@@ -15,18 +15,18 @@
 
 1. Видаліть `node_modules` та lock файли:
    ```bash
-   npm run clean
-   rm -rf node_modules package-lock.json
+   pnpm run clean
+   rm -rf node_modules pnpm-lock.yaml
    ```
 
 2. Встановіть залежності:
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. Перевірте збірку локально:
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 4. Налаштуйте environment variables на Vercel:
